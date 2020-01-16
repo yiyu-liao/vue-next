@@ -17,6 +17,7 @@ const shallowReadonlyGet = /*#__PURE__*/ createGetter(true, true)
 
 function createGetter(isReadonly = false, shallow = false) {
   return function get(target: object, key: string | symbol, receiver: object) {
+    // debug core，Reflect确保原生默认行为能够正常进行，此处为获取key的值
     const res = Reflect.get(target, key, receiver)
     if (isSymbol(key) && builtInSymbols.has(key)) {
       return res
@@ -29,8 +30,8 @@ function createGetter(isReadonly = false, shallow = false) {
     if (isRef(res)) {
       return res.value
     }
-    track(target, TrackOpTypes.GET, key)
-    return isObject(res)
+    track(target, TrackOpTypes.GET, key) // debug core, 默认跑这里进行依赖收集
+    return isObject(res) // debug core, 如果是嵌套对象，再次遍历reactive
       ? isReadonly
         ? // need to lazy access readonly and reactive here to avoid
           // circular dependency
@@ -75,6 +76,7 @@ function createSetter(isReadonly = false, shallow = false) {
     const hadKey = hasOwn(target, key)
     const result = Reflect.set(target, key, value, receiver)
     // don't trigger if target is something up in the prototype chain of original
+    // debug core, 在reactive维护了一个reactiveToRaw队列，存储了[proxy]:[target]这样的队列，如果目标在原型链上，不要触发
     if (target === toRaw(receiver)) {
       /* istanbul ignore else */
       if (__DEV__) {
@@ -85,6 +87,7 @@ function createSetter(isReadonly = false, shallow = false) {
           trigger(target, TriggerOpTypes.SET, key, extraInfo)
         }
       } else {
+        // debug core, 数据的更新类型有新增/修改两种
         if (!hadKey) {
           trigger(target, TriggerOpTypes.ADD, key)
         } else if (hasChanged(value, oldValue)) {

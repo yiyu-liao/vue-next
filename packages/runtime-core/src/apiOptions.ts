@@ -283,7 +283,7 @@ export function applyOptions(
           checkDuplicateProperties!(OptionTypes.DATA, key)
         }
       }
-      instance.data = reactive(data)
+      instance.data = reactive(data) //debug core, 将data属性proxy化
     } else {
       // existing data: this is a mixin or extends.
       extend(instance.data, data)

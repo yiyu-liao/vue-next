@@ -82,8 +82,8 @@ export function createAppAPI<HostNode, HostElement>(
   render: RootRenderFunction<HostNode, HostElement>
 ): () => App<HostElement> {
   return function createApp(): App {
-    const context = createAppContext()
-    const installedPlugins = new Set()
+    const context = createAppContext() // debug core, 初始化全局属性
+    const installedPlugins = new Set() // debug core, 保存已经注册的plugin，避免重复添加
 
     let isMounted = false
 
@@ -101,11 +101,12 @@ export function createAppAPI<HostNode, HostElement>(
       },
 
       use(plugin: Plugin, ...options: any[]) {
+        // debug core, 暴露use接口
         if (installedPlugins.has(plugin)) {
           __DEV__ && warn(`Plugin has already been applied to target app.`)
         } else if (plugin && isFunction(plugin.install)) {
           installedPlugins.add(plugin)
-          plugin.install(app, ...options)
+          plugin.install(app, ...options) // debug core, install函数第一个参数为全局app对象
         } else if (isFunction(plugin)) {
           installedPlugins.add(plugin)
           plugin(app, ...options)
@@ -178,7 +179,7 @@ export function createAppAPI<HostNode, HostElement>(
           const vnode = createVNode(rootComponent, rootProps)
           // store app context on the root VNode.
           // this will be set on the root instance on initial mount.
-          vnode.appContext = context
+          vnode.appContext = context // debug core, vnode.appContext => context
 
           // HMR root reload
           if (__BUNDLER__ && __DEV__) {
@@ -189,7 +190,7 @@ export function createAppAPI<HostNode, HostElement>(
 
           render(vnode, rootContainer)
           isMounted = true
-          return vnode.component!.proxy
+          return vnode.component!.proxy // debug core, 添加 !后缀，通过手动断言去除了componentd中的null, undefinded
         } else if (__DEV__) {
           warn(
             `App has already been mounted. Create a new app instance instead.`

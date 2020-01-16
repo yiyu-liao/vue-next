@@ -129,16 +129,16 @@ export function track(target: object, type: TrackOpTypes, key: unknown) {
   if (!shouldTrack || activeEffect === undefined) {
     return
   }
-  let depsMap = targetMap.get(target)
+  let depsMap = targetMap.get(target) // debug core, 所有经过proxy的target, 会被放到targetMap管理.例如不同的组存在不同的target，都会放到targetMap，避免重复track
   if (depsMap === void 0) {
     targetMap.set(target, (depsMap = new Map()))
   }
   let dep = depsMap.get(key)
   if (dep === void 0) {
-    depsMap.set(key, (dep = new Set()))
+    depsMap.set(key, (dep = new Set())) // debug core, 一个target存在多个属性，因此可能存在多个依赖，每个属性的依赖都交由各自的map对象缓存
   }
   if (!dep.has(activeEffect)) {
-    dep.add(activeEffect)
+    dep.add(activeEffect) // debug core， activeEffect ？？
     activeEffect.deps.push(dep)
     if (__DEV__ && activeEffect.options.onTrack) {
       activeEffect.options.onTrack({
@@ -167,6 +167,7 @@ export function trigger(
   if (type === TriggerOpTypes.CLEAR) {
     // collection being cleared, trigger all effects for target
     depsMap.forEach(dep => {
+      // debug core, 如果是clear, 清空属性对应的所有依赖
       addRunners(effects, computedRunners, dep)
     })
   } else {
@@ -181,12 +182,12 @@ export function trigger(
     }
   }
   const run = (effect: ReactiveEffect) => {
-    scheduleRun(effect, target, type, key, extraInfo)
+    scheduleRun(effect, target, type, key, extraInfo) // debug core, 核心queuePostRenderEffect
   }
   // Important: computed effects must be run first so that computed getters
   // can be invalidated before any normal effects that depend on them are run.
   computedRunners.forEach(run)
-  effects.forEach(run)
+  effects.forEach(run) // debug core, 属性有改变，将收集的依赖都跑了
 }
 
 function addRunners(
@@ -222,7 +223,7 @@ function scheduleRun(
     effect.options.onTrigger(extraInfo ? extend(event, extraInfo) : event)
   }
   if (effect.options.scheduler !== void 0) {
-    effect.options.scheduler(effect)
+    effect.options.scheduler(effect) // debug core, 其实就是触发了watch的queuePostRenderEffect
   } else {
     effect()
   }
